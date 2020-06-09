@@ -25,7 +25,7 @@ def get_all_acronyms(path):
                 acronyms.append(acronym)
 
     return acronyms
-        
+
 
 def get_explained_acronyms(path):
     """
@@ -46,7 +46,7 @@ def get_explained_acronyms(path):
             acronymIndex = para.text.index(acronym)
             numOfWords = sum(1 for c in acronym if c.isupper())
 
-            
+
             explanation = ""
             acronymIndex -= 1
 

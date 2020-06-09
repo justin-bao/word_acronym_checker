@@ -5,7 +5,7 @@ from word_acronym_reader import *
 
 if __name__=="__main__":
     import sys
-    
+
     all_acronyms = get_all_acronyms(sys.argv[1])
     explained_acronyms = get_explained_acronyms(sys.argv[1])
 
@@ -22,9 +22,9 @@ if __name__=="__main__":
     for table in get_docx_tables(sys.argv[1]):
         row = get_text_for_table(table)[0]
         if row[0].isupper():
-            abbreviation_table = []
+            abbreviation_table = table
             break
-    
+
     for row in get_text_for_table(abbreviation_table):
         for acronym in all_acronyms:
             if row[0] == acronym:
@@ -52,4 +52,3 @@ if __name__=="__main__":
     for acronym in unexplained_acronyms:
         print(acronym)
     print()
-                
