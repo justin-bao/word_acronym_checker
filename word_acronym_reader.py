@@ -5,7 +5,6 @@ import re
 from docx import Document
 from docx.shared import Inches
 
-
 def get_all_acronyms(path):
     """
     Find every (possible) acronym in the document
@@ -60,7 +59,7 @@ def get_explained_acronyms(path):
             # remove parentheses from the acronym and leading/trailing whitespace
             acronymTuples.append((acronym[1:-1], explanation.strip()))
 
-    return acronymTuples
+    return dict(acronymTuples)
 
 
 if __name__=="__main__":

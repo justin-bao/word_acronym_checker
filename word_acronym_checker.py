@@ -1,34 +1,51 @@
 #!/usr/bin/env python3
 
+# Program for syncing a table of acronyms with the acronyms in the Word doc. 
 from word_table_reader import *
 from word_acronym_reader import *
-from shutil import copyfile
+
+def create_acronym_table(path):
+    """
+    Creates an empty acronym table in the given doc.
+    """
+
+    document = Document(path)
+    new_table = document.add_table(rows=1, cols=2, style='Table Grid')
+    new_table.cell(0, 0).text = "ACRONYM"
+    new_table.cell(0, 1).text = "MEANING"
+    document.save(path)
 
 def get_acronym_table(path):
+    """
+    Get the table (for word_table_reader) in the given doc with the acronyms and meanings.
+    """
+
     acronym_table = None
     for table in get_docx_tables(path):
         row = get_text_for_table(table)[0]
         if row[0].strip().lower() == "acronym":
             acronym_table = table
             break
-
-    if acronym_table == None:
-        document = Document(path)
-        new_table = document.add_table(rows=1, cols=2, style='Table Grid')
-        new_table.cell(0, 0).text = "ACRONYM"
-        new_table.cell(0, 1).text = "MEANING"
-        document.save(path)
-
-        for table in get_docx_tables(path):
-            row = get_text_for_table(table)[0]
-            if row[0].strip().lower() == "acronym":
-                acronym_table = table
-                break
     return acronym_table
 
+def get_acronym_table_docx(path):
+    """
+    Get the table (for docx) in the given doc with the acronyms and meanings.
+    """
+
+    document = Document(path)
+    for table in document.tables:
+        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
+            return table
 
 def get_table_acronyms(path):
+    """
+    Get all the acronyms from the acronym table in the given doc, or throw a ValueError if the table is missing.
+    """
+
     table = get_acronym_table(path)
+    if table == None:
+        raise ValueError("Acronym table not found")
 
     table_acronyms = []
     for row in get_text_for_table(table):
@@ -37,6 +54,11 @@ def get_table_acronyms(path):
     return table_acronyms
 
 def add_table_row(path, acronym, description):
+    """
+    Add a row with given acronym and meaning to the acronym table in the given doc, or throw a ValueError if the table is missing.
+    If an acronym has not been explained yet, print this missing acronym to the console.
+    """
+
     document = Document(path)
     acronym_table = None
     for table in document.tables:
@@ -53,6 +75,10 @@ def add_table_row(path, acronym, description):
     document.save(path)
 
 def remove_table_row(path, acronym):
+    """
+    Remove a row with given acronym from the acronym table in the given doc, or throw a ValueError if the table is missing.
+    """
+
     document = Document(path)
     acronym_table = None
     for table in document.tables:
@@ -71,13 +97,23 @@ def remove_table_row(path, acronym):
     document.save(path)
 
 def process(path):
+    """
+    Process the given doc by adding all acronyms to the acronym table that are in the doc (if not already in the table)
+    and removing all acronyms from the acronym table that aren't in the doc.
+    """
+
     read_acronyms = get_all_acronyms(path)
     table_acronyms = get_table_acronyms(path)
+    explained_acronyms = get_explained_acronyms(path)
 
     table = get_acronym_table_docx(path)
 
     for acronym in set(read_acronyms) - set(table_acronyms):
-        add_table_row(path, acronym, acronym)
+        if acronym in explained_acronyms:
+            add_table_row(path, acronym, explained_acronyms[acronym])
+        else:
+            print("Acronym " + acronym + " never explained")
+            add_table_row(path, acronym, "(Meaning Missing)")
 
     for acronym in set(table_acronyms) - set(read_acronyms):
         remove_table_row(path, acronym)
@@ -85,15 +121,16 @@ def process(path):
     new_table = get_acronym_table(path)
     new_table_acronyms = get_table_acronyms(path)
 
-def get_acronym_table_docx(path):
-    document = Document(path)
-    for table in document.tables:
-        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
-            return table
-
 if __name__=="__main__":
+    """
+    Processes the given doc and reports which acronyms have been added and deleted from the table.
+    """
+
     import sys
     path = sys.argv[1]
+
+    if get_acronym_table(path) == None:
+        create_acronym_table(path)
 
     acronyms_in_table = get_table_acronyms(path)
 

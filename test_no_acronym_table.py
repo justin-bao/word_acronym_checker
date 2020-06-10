@@ -15,6 +15,8 @@ actual_table_acronyms = []
 def test_table_exists():
     temp_path = temp_dir + "test4_create.docx"
     copyfile(path, temp_path)
+    assert get_acronym_table(temp_path) == None, "acronym table found but doesn't exist yet"
+    create_acronym_table(temp_path)
     assert get_acronym_table(temp_path) != None, "acronym table not found"
 
     if os.path.exists(temp_path):
@@ -29,6 +31,7 @@ def test_doc_acronyms():
 def test_table_acronyms():
     temp_path = temp_dir + "test4_table.docx"
     copyfile(path, temp_path)
+    create_acronym_table(temp_path)
     table_acronyms = get_table_acronyms(temp_path)
     assert set(table_acronyms) == set(actual_table_acronyms), "acronyms not read correctly from table"
 
@@ -42,6 +45,7 @@ def test_add_acronym():
     to_add_desc = "A New Acronym"
     temp_path = temp_dir + "test4_add.docx"
     copyfile(path, temp_path)
+    create_acronym_table(temp_path)
 
     document = Document(temp_path)
     document.add_paragraph("Testing an add of " + to_add_desc + " (" + to_add_acronym + ").")
@@ -71,6 +75,7 @@ def test_remove_acronym():
     to_remove = "TLA"
     temp_path = temp_dir + "test4_remove.docx"
     copyfile(path, temp_path)
+    create_acronym_table(temp_path)
 
     document = Document(temp_path)
     for para in document.paragraphs:
@@ -99,6 +104,7 @@ def test_remove_acronym():
 def test_processing():
     temp_path = temp_dir + "test4_process.docx"
     copyfile(path, temp_path)
+    create_acronym_table(temp_path)
     document = Document(temp_path)
     document.save(temp_path)
 
