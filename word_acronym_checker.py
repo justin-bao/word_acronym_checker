@@ -2,6 +2,71 @@
 
 from word_table_reader import *
 from word_acronym_reader import *
+from shutil import copyfile
+
+def get_acronym_table(path):
+    for table in get_docx_tables(path):
+        row = get_text_for_table(table)[0]
+        if row[0].strip().lower() == "acronym":
+            return table
+
+def get_table_acronyms(path):
+    table = get_acronym_table(path)
+
+    table_acronyms = []
+    for row in get_text_for_table(table):
+        if row[0].strip().lower() != "acronym":
+            table_acronyms.append(row[0])
+    return table_acronyms
+
+def add_table_row(path, acronym, description):
+    document = Document(path)
+    acronym_table = None
+    for table in document.tables:
+        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
+            acronym_table = table
+            break
+
+    new_row = acronym_table.add_row()
+    new_row.cells[0].text = acronym
+    new_row.cells[1].text = description
+    document.save(path)
+
+def remove_table_row(path, acronym):
+    document = Document(path)
+    acronym_table = None
+    for table in document.tables:
+        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
+            acronym_table = table
+            break
+
+    tbl = acronym_table._tbl
+    for row in table.rows:
+        if row.cells[0].text == acronym:
+            tbl_row = row._tr
+            tbl.remove(tbl_row)
+    document.save(path)
+
+def process(path):
+    read_acronyms = get_all_acronyms(path)
+    table_acronyms = get_table_acronyms(path)
+
+    table = get_acronym_table_docx(path)
+
+    for acronym in set(read_acronyms) - set(table_acronyms):
+        add_table_row(path, acronym, acronym)
+
+    for acronym in set(table_acronyms) - set(read_acronyms):
+        remove_table_row(path, table, acronym)
+
+    new_table = get_acronym_table(path)
+    new_table_acronyms = get_table_acronyms(path)
+
+def get_acronym_table_docx(path):
+    document = Document(path)
+    for table in document.tables:
+        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
+            return table
 
 if __name__=="__main__":
     import sys

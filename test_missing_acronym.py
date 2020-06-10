@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from word_acronym_checker import *
 from word_table_reader import *
 from word_acronym_reader import *
 from shutil import copyfile
@@ -7,37 +8,25 @@ import pytest
 import os
 
 path = "tests/data/test2_invalid.docx"
-read_acronyms = []
-table_acronyms = []
-abbreviation_table = None
-
-for table in get_docx_tables(path):
-    row = get_text_for_table(table)[0]
-    if row[0].strip().lower() == "acronym":
-        abbreviation_table = table
-        break
+temp_dir = "tests/data/temp/"
+actual_doc_acronyms = ["TLA", "FLA", "SLA"]
+actual_table_acronyms = ["TLA", "FLA"]
 
 def test_table_exists():
-    assert abbreviation_table != None, "acronym table not found"
+    assert get_acronym_table(path) != None, "acronym table not found"
 
 def test_doc_acronyms():
     read_acronyms = get_all_acronyms(path)
-    actual_acronyms = ["TLA", "FLA", "SLA"]
-
-    assert set(read_acronyms) == set(actual_acronyms), "acronyms not read correctly in doc"
+    assert set(read_acronyms) == set(actual_doc_acronyms), "acronyms not read correctly in doc"
 
 def test_table_acronyms():
-    for row in get_text_for_table(abbreviation_table):
-        if row[0].strip().lower() != "acronym":
-            table_acronyms.append(row[0])
-    actual_acronyms = ["TLA", "FLA"]
-
-    assert set(table_acronyms) == set(actual_acronyms), "acronyms not read correctly from table"
+    table_acronyms = get_table_acronyms(path)
+    assert set(table_acronyms) == set(actual_table_acronyms), "acronyms not read correctly from table"
 
 def test_add_acronym():
     to_add_acronym = "ANA"
     to_add_desc = "A New Anagram"
-    temp_path = r'tests/data/temp/test2_add.docx'
+    temp_path = temp_dir + "test2_add.docx"
     copyfile(path, temp_path)
 
     document = Document(temp_path)
@@ -45,36 +34,27 @@ def test_add_acronym():
     document.save(temp_path)
 
     new_read_acronyms = get_all_acronyms(temp_path)
-    new_actual_acronyms = ["TLA", "FLA", "SLA", to_add_acronym]
-    new_actual_table_acronyms = ["TLA", "FLA", to_add_acronym]
+    new_actual_acronyms = actual_doc_acronyms.copy()
+    new_actual_acronyms.append(to_add_acronym)
+    new_actual_table_acronyms = actual_table_acronyms.copy()
+    new_actual_table_acronyms.append(to_add_acronym)
 
     assert set(new_read_acronyms) == set(new_actual_acronyms), "acronym not added correctly in doc"
 
-    for table in document.tables:
-        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
-            new_row = table.add_row()
-            new_row.cells[0].text = to_add_acronym
-            new_row.cells[1].text = to_add_desc
-            break
-    document.save(temp_path)
+    add_table_row(temp_path, to_add_acronym, to_add_desc)
 
-    new_table = None
-    for table in get_docx_tables(temp_path):
-        row = get_text_for_table(table)[0]
-        if row[0].strip().lower() == "acronym":
-            new_table = table
-            break
+    new_table_acronyms = get_table_acronyms(temp_path)
 
-    new_table_acronyms = []
-    for row in get_text_for_table(new_table):
-        if row[0].strip().lower() != "acronym":
-            new_table_acronyms.append(row[0])
+    if os.path.exists(temp_path):
+        os.remove(temp_path)
+    else:
+        print("The file does not exist")
 
     assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not added correctly in table"
 
 def test_remove_acronym():
     to_remove = "TLA"
-    temp_path = r'tests/data/temp/test2_remove.docx'
+    temp_path = temp_dir + "test2_remove.docx"
     copyfile(path, temp_path)
 
     document = Document(temp_path)
@@ -83,66 +63,38 @@ def test_remove_acronym():
     document.save(temp_path)
 
     new_read_acronyms = get_all_acronyms(temp_path)
-    new_actual_acronyms = ["FLA", "SLA"]
-    new_actual_table_acronyms = ["FLA"]
+    new_actual_acronyms = actual_doc_acronyms.copy()
+    new_actual_acronyms.remove(to_remove)
+    new_actual_table_acronyms = actual_table_acronyms.copy()
+    new_actual_table_acronyms.remove(to_remove)
 
     assert set(new_read_acronyms) == set(new_actual_acronyms), "acronym not removed correctly in doc"
 
-    for table in document.tables:
-        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
-            tbl = table._tbl
-            for row in table.rows:
-                if row.cells[0].text == to_remove:
-                    tbl_row = row._tr
-                    tbl.remove(tbl_row)
-                    break
-    document.save(temp_path)
+    remove_table_row(temp_path, to_remove)
 
-    new_table = None
-    for table in get_docx_tables(temp_path):
-        row = get_text_for_table(table)[0]
-        if row[0].strip().lower() == "acronym":
-            new_table = table
-            break
+    new_table_acronyms = get_table_acronyms(temp_path)
 
-    new_table_acronyms = []
-    for row in get_text_for_table(new_table):
-        if row[0].strip().lower() != "acronym":
-            new_table_acronyms.append(row[0])
+    if os.path.exists(temp_path):
+        os.remove(temp_path)
+    else:
+        print("The file does not exist")
 
     assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not removed correctly in table"
 
 def test_processing():
-    read_acronyms = get_all_acronyms(path)
-    table_acronyms = []
-    for row in get_text_for_table(abbreviation_table):
-        if row[0].strip().lower() != "acronym":
-            table_acronyms.append(row[0])
-
-    temp_path = r'tests/data/temp/test2_process.docx'
+    temp_path = temp_dir + "test2_process.docx"
     copyfile(path, temp_path)
     document = Document(temp_path)
     document.save(temp_path)
 
-    for table in document.tables:
-        if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
-            for acronym in set(read_acronyms) - set(table_acronyms):
-                new_row = table.add_row()
-                new_row.cells[0].text = acronym
-                new_row.cells[1].text = acronym
-                break
-    document.save(temp_path)
+    read_acronyms = get_all_acronyms(temp_path)
+    process(temp_path)
 
-    new_table = None
-    for table in get_docx_tables(temp_path):
-        row = get_text_for_table(table)[0]
-        if row[0].strip().lower() == "acronym":
-            new_table = table
-            break
+    new_table_acronyms = get_table_acronyms(temp_path)
 
-    new_table_acronyms = []
-    for row in get_text_for_table(new_table):
-        if row[0].strip().lower() != "acronym":
-            new_table_acronyms.append(row[0])
+    if os.path.exists(temp_path):
+        os.remove(temp_path)
+    else:
+        print("The file does not exist")
 
     assert set(new_table_acronyms) == set(read_acronyms), "document and table acronyms out of sync"
