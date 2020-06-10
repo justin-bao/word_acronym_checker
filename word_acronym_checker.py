@@ -5,10 +5,27 @@ from word_acronym_reader import *
 from shutil import copyfile
 
 def get_acronym_table(path):
+    acronym_table = None
     for table in get_docx_tables(path):
         row = get_text_for_table(table)[0]
         if row[0].strip().lower() == "acronym":
-            return table
+            acronym_table = table
+            break
+
+    if acronym_table == None:
+        document = Document(path)
+        new_table = document.add_table(rows=1, cols=2, style='Table Grid')
+        new_table.cell(0, 0).text = "ACRONYM"
+        new_table.cell(0, 1).text = "MEANING"
+        document.save(path)
+
+        for table in get_docx_tables(path):
+            row = get_text_for_table(table)[0]
+            if row[0].strip().lower() == "acronym":
+                acronym_table = table
+                break
+    return acronym_table
+
 
 def get_table_acronyms(path):
     table = get_acronym_table(path)
@@ -27,6 +44,9 @@ def add_table_row(path, acronym, description):
             acronym_table = table
             break
 
+    if acronym_table == None:
+        raise ValueError("Acronym table not found")
+
     new_row = acronym_table.add_row()
     new_row.cells[0].text = acronym
     new_row.cells[1].text = description
@@ -39,6 +59,9 @@ def remove_table_row(path, acronym):
         if table.cell(0, 0) != None and table.cell(0, 0).text.strip().lower() == "acronym":
             acronym_table = table
             break
+
+    if acronym_table == None:
+        raise ValueError("Acronym table not found")
 
     tbl = acronym_table._tbl
     for row in table.rows:
@@ -57,7 +80,7 @@ def process(path):
         add_table_row(path, acronym, acronym)
 
     for acronym in set(table_acronyms) - set(read_acronyms):
-        remove_table_row(path, table, acronym)
+        remove_table_row(path, acronym)
 
     new_table = get_acronym_table(path)
     new_table_acronyms = get_table_acronyms(path)
@@ -70,50 +93,23 @@ def get_acronym_table_docx(path):
 
 if __name__=="__main__":
     import sys
+    path = sys.argv[1]
 
-    all_acronyms = get_all_acronyms(sys.argv[1])
-    explained_acronyms = get_explained_acronyms(sys.argv[1])
+    acronyms_in_table = get_table_acronyms(path)
 
-    acronyms_in_table = []
-    acronyms_not_in_table = []
+    print("Processing " + path + "...")
+    print("")
+    process(path)
 
-    explained_acronyms_in_table = []
-    explained_acronyms_not_in_table = []
-
-    unexplained_acronyms = []
-
-    abbreviation_table = []
-
-    for table in get_docx_tables(sys.argv[1]):
-        row = get_text_for_table(table)[0]
-        if row[0].isupper():
-            abbreviation_table = table
-            break
-
-    for row in get_text_for_table(abbreviation_table):
-        for acronym in all_acronyms:
-            if row[0] == acronym:
-                acronyms_in_table.append(acronym)
-            else:
-                acronyms_not_in_table.append(acronym)
-
-        for acronym in explained_acronyms:
-            if row[0] == acronym[0] and row[1] == acronym[1]:
-                explained_acronyms_in_table.append(acronym)
-            else:
-                explained_acronyms_not_in_table.append(acronym)
-
-    for acronym in explained_acronyms:
-        if acronym[0] not in all_acronyms:
-            unexplained_acronyms.append(acronym[0])
+    new_acronyms_in_table = get_table_acronyms(path)
 
 
-    print("Acronyms not in the table: ")
-    for acronym in acronyms_not_in_table:
+    print("Acronyms added to the table: ")
+    for acronym in set(acronyms_in_table) - set(new_acronyms_in_table):
         print(acronym)
-    print()
+    print("")
 
-    print("Acronyms that have not been explained: ")
-    for acronym in unexplained_acronyms:
+    print("Acronyms removed from the table: ")
+    for acronym in set(new_acronyms_in_table) - set(acronyms_in_table):
         print(acronym)
-    print()
+    print("")

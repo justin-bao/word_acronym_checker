@@ -25,7 +25,7 @@ def test_table_acronyms():
 
 def test_add_acronym():
     to_add_acronym = "ANA"
-    to_add_desc = "A New Anagram"
+    to_add_desc = "A New Acronym"
     temp_path = temp_dir + "test2_add.docx"
     copyfile(path, temp_path)
 
@@ -45,12 +45,12 @@ def test_add_acronym():
 
     new_table_acronyms = get_table_acronyms(temp_path)
 
+    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not added correctly in table"
+
     if os.path.exists(temp_path):
         os.remove(temp_path)
     else:
         print("The file does not exist")
-
-    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not added correctly in table"
 
 def test_remove_acronym():
     to_remove = "TLA"
@@ -74,12 +74,12 @@ def test_remove_acronym():
 
     new_table_acronyms = get_table_acronyms(temp_path)
 
+    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not removed correctly in table"
+
     if os.path.exists(temp_path):
         os.remove(temp_path)
     else:
         print("The file does not exist")
-
-    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not removed correctly in table"
 
 def test_processing():
     temp_path = temp_dir + "test2_process.docx"
@@ -92,9 +92,9 @@ def test_processing():
 
     new_table_acronyms = get_table_acronyms(temp_path)
 
+    assert set(new_table_acronyms) == set(read_acronyms), "document and table acronyms out of sync"
+
     if os.path.exists(temp_path):
         os.remove(temp_path)
     else:
         print("The file does not exist")
-
-    assert set(new_table_acronyms) == set(read_acronyms), "document and table acronyms out of sync"

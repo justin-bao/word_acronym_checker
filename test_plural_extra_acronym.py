@@ -7,10 +7,10 @@ from shutil import copyfile
 import pytest
 import os
 
-path = "tests/data/test1_valid.docx"
+path = "tests/data/test3_invalid.docx"
 temp_dir = "tests/data/temp/"
-actual_doc_acronyms = ["TLA", "FLA"]
-actual_table_acronyms = ["TLA", "FLA"]
+actual_doc_acronyms = ["TLA", "FLA", "VPA"]
+actual_table_acronyms = ["TLA", "FLA", "NSA", "VPA"]
 
 def test_table_exists():
     assert get_acronym_table(path) != None, "acronym table not found"
@@ -26,7 +26,7 @@ def test_table_acronyms():
 def test_add_acronym():
     to_add_acronym = "ANA"
     to_add_desc = "A New Acronym"
-    temp_path = temp_dir + "test1_add.docx"
+    temp_path = temp_dir + "test3_add.docx"
     copyfile(path, temp_path)
 
     document = Document(temp_path)
@@ -36,6 +36,8 @@ def test_add_acronym():
     new_read_acronyms = get_all_acronyms(temp_path)
     new_actual_acronyms = actual_doc_acronyms.copy()
     new_actual_acronyms.append(to_add_acronym)
+    new_actual_table_acronyms = actual_table_acronyms.copy()
+    new_actual_table_acronyms.append(to_add_acronym)
 
     assert set(new_read_acronyms) == set(new_actual_acronyms), "acronym not added correctly in doc"
 
@@ -43,7 +45,7 @@ def test_add_acronym():
 
     new_table_acronyms = get_table_acronyms(temp_path)
 
-    assert set(new_table_acronyms) == set(new_actual_acronyms), "acronym not added correctly in table"
+    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not added correctly in table"
 
     if os.path.exists(temp_path):
         os.remove(temp_path)
@@ -52,7 +54,7 @@ def test_add_acronym():
 
 def test_remove_acronym():
     to_remove = "TLA"
-    temp_path = temp_dir + "test1_remove.docx"
+    temp_path = temp_dir + "test3_remove.docx"
     copyfile(path, temp_path)
 
     document = Document(temp_path)
@@ -63,6 +65,8 @@ def test_remove_acronym():
     new_read_acronyms = get_all_acronyms(temp_path)
     new_actual_acronyms = actual_doc_acronyms.copy()
     new_actual_acronyms.remove(to_remove)
+    new_actual_table_acronyms = actual_table_acronyms.copy()
+    new_actual_table_acronyms.remove(to_remove)
 
     assert set(new_read_acronyms) == set(new_actual_acronyms), "acronym not removed correctly in doc"
 
@@ -70,7 +74,7 @@ def test_remove_acronym():
 
     new_table_acronyms = get_table_acronyms(temp_path)
 
-    assert set(new_table_acronyms) == set(new_actual_acronyms), "acronym not removed correctly in table"
+    assert set(new_table_acronyms) == set(new_actual_table_acronyms), "acronym not removed correctly in table"
 
     if os.path.exists(temp_path):
         os.remove(temp_path)
@@ -78,7 +82,7 @@ def test_remove_acronym():
         print("The file does not exist")
 
 def test_processing():
-    temp_path = temp_dir + "test1_process.docx"
+    temp_path = temp_dir + "test3_process.docx"
     copyfile(path, temp_path)
     document = Document(temp_path)
     document.save(temp_path)
