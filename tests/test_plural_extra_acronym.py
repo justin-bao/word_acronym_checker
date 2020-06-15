@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 from word_acronym_checker import *
-from word_table_reader import *
-from word_acronym_reader import *
 from shutil import copyfile
 import pytest
 import os

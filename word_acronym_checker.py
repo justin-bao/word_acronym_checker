@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-# Program for syncing a table of acronyms with the acronyms in the Word doc. 
-from word_table_reader import *
-from word_acronym_reader import *
+# Program for syncing a table of acronyms with the acronyms in the Word doc.
+from .word_table_reader import *
+from .word_acronym_reader import *
 
 def create_acronym_table(path):
     """
