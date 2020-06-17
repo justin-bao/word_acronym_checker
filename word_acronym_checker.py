@@ -148,24 +148,31 @@ def strikethrough_table_row(path, acronym):
     document.save(path)
     print("Struckthrough " + acronym + " from the acronym table")
 
-def process(path):
+def process(path, whitelist=""):
     """
     Process the given doc by adding all acronyms to the acronym table that are in the doc (if not already in the table)
     and removing all acronyms from the acronym table that aren't in the doc.
+
+    Whitelisted acronyms are ignored.
     """
 
     read_acronyms = get_all_acronyms(path)
     table_acronyms = get_table_acronyms(path)
     explained_acronyms = get_explained_acronyms(path)
 
+    whitelisted_acronyms = {}
+    if whitelist != "":
+        whitelisted_acronyms = read_whitelist(whitelist)
+
     table = get_acronym_table_docx(path)
 
     for acronym in set(read_acronyms) - set(table_acronyms):
-        if acronym in explained_acronyms:
-            add_table_row(path, acronym, explained_acronyms[acronym])
-        else:
-            print("Acronym " + acronym + " never explained")
-            add_table_row(path, acronym, "(Meaning Missing)")
+        if acronym not in whitelisted_acronyms:
+            if acronym in explained_acronyms:
+                add_table_row(path, acronym, explained_acronyms[acronym])
+            else:
+                print("Acronym " + acronym + " never explained")
+                add_table_row(path, acronym, "(Meaning Missing)")
 
     for acronym in set(table_acronyms) - set(read_acronyms):
         remove_table_row(path, acronym)
@@ -173,40 +180,54 @@ def process(path):
     new_table = get_acronym_table(path)
     new_table_acronyms = get_table_acronyms(path)
 
-def process_with_strikethrough(path):
+def process_with_strikethrough(path, whitelist=""):
     """
     Modifies the given doc by adding all acronyms to the acronym table that are in the doc (if not already in the table)
     and putting acronyms that aren't in the doc into a new table.
+
+    Whitelisted acronyms are ignored.
     """
 
     read_acronyms = get_all_acronyms(path)
     table_acronyms = get_table_acronyms(path)
     explained_acronyms = get_explained_acronyms(path)
+
+    whitelisted_acronyms = {}
+    if whitelist != "":
+        whitelisted_acronyms = read_whitelist(whitelist)
 
     table = get_acronym_table_docx(path)
 
     for acronym in set(read_acronyms) - set(table_acronyms):
-        if acronym in explained_acronyms:
-            add_table_row(path, acronym, explained_acronyms[acronym])
-        else:
-            print("Acronym " + acronym + " never explained")
-            add_table_row(path, acronym, "(Meaning Missing)")
+        if acronym not in whitelisted_acronyms:
+            if acronym in explained_acronyms:
+                add_table_row(path, acronym, explained_acronyms[acronym])
+            else:
+                print("Acronym " + acronym + " never explained")
+                add_table_row(path, acronym, "(Meaning Missing)")
 
     for acronym in set(table_acronyms) - set(read_acronyms):
-        strikethrough_table_row(path, acronym)
+        if acronym not in whitelisted_acronyms:
+            strikethrough_table_row(path, acronym)
 
     new_table = get_acronym_table(path)
     new_table_acronyms = get_table_acronyms(path)
 
-def process_with_report(path):
+def process_with_report(path, whitelist=""):
     """
     Modifies the given doc by adding all acronyms to the acronym table that are in the doc (if not already in the table)
     and putting acronyms that aren't in the doc into a new table.
+
+    Whitelisted acronyms are ignored.
     """
 
     read_acronyms = get_all_acronyms(path)
     table_acronyms = get_table_acronyms(path)
     explained_acronyms = get_explained_acronyms(path)
+
+    whitelisted_acronyms = {}
+    if whitelist != "":
+        whitelisted_acronyms = read_whitelist(whitelist)
 
     table = get_acronym_table_docx(path)
 
@@ -217,17 +238,24 @@ def process_with_report(path):
     document.save(path)
 
     for acronym in set(read_acronyms) - set(table_acronyms):
-        if acronym in explained_acronyms:
-            add_table_row(path, acronym, explained_acronyms[acronym])
-        else:
-            print("Acronym " + acronym + " never explained")
-            add_table_row(path, acronym, "(Meaning Missing)")
+        if acronym not in whitelisted_acronyms:
+            if acronym in explained_acronyms:
+                add_table_row(path, acronym, explained_acronyms[acronym])
+            else:
+                print("Acronym " + acronym + " never explained")
+                add_table_row(path, acronym, "(Meaning Missing)")
 
     for acronym in set(table_acronyms) - set(read_acronyms):
-        add_table_row_removed(path, acronym)
+        if acronym not in whitelisted_acronyms:
+            add_table_row_removed(path, acronym)
 
     new_table = get_acronym_table(path)
     new_table_acronyms = get_table_acronyms(path)
+
+def read_whitelist(path):
+    with open(path, 'r') as f:
+        whitelist = [line.strip() for line in f]
+        return set(whitelist)
 
 if __name__=="__main__":
     """
@@ -237,6 +265,11 @@ if __name__=="__main__":
     import sys
     path = sys.argv[1]
     option = sys.argv[2]
+    print(len(sys.argv))
+    if len(sys.argv) > 3:
+        whitelist_path = sys.argv[3]
+    else:
+        whitelist_path = ""
 
     if get_acronym_table(path) == None:
         create_acronym_table(path)
@@ -244,10 +277,10 @@ if __name__=="__main__":
     acronyms_in_table = get_table_acronyms(path)
 
     if option == "remove":
-        process(path)
+        process(path, whitelist=whitelist_path)
     elif option == "strikethrough":
-        process_with_strikethrough(path)
+        process_with_strikethrough(path, whitelist=whitelist_path)
     elif option == "report":
-        process_with_removed_report(path)
+        process_with_removed_report(path, whitelist=whitelist_path)
     else:
         print("UNKNOWN OPTION - options include: remove (remove acronyms from doc), strikethrough (strikethrough acronyms), and report (create a table of acronyms that should be removed).")
